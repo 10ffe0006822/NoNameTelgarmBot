@@ -4,8 +4,11 @@ services:
   bot:
     build: ./
     container_name: telegram-bot
+    ports:
+      - "8888:8888"
     environment:
       - TOKEN=${TOKEN}
+      - PROXY=${PROXY}
     volumes:
       - ./data:/app/data
     restart: unless-stopped

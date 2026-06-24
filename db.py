@@ -9,15 +9,11 @@ async def add_chat_id(chat_id, chat_name):
     global cursor
     cursor.execute("INSERT INTO chat_ids (chat_id, chat_name) VALUES (?, ?)", (chat_id, chat_name))
     conn.commit()
-    cursor.close()
-    conn.close()
 
 async def remove_chat_id(chat_id):
     global cursor
     cursor.execute("DELETE FROM chat_ids WHERE chat_id = ?", (chat_id,))
     conn.commit()
-    cursor.close()
-    conn.close()
 
 async def get_chat_id():
     global cursor

@@ -2,6 +2,7 @@ import asyncio
 import os
 import random
 import string
+
 import db
 import logging
 
@@ -12,11 +13,13 @@ from aiogram import Bot, Dispatcher, html, F
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 from aiogram.filters import Command
+from aiogram.client.session.aiohttp import AiohttpSession
 from aiogram.types import Message, BotCommand, BotCommandScopeDefault, MenuButtonCommands, CallbackQuery
 
 TOKEN = os.getenv("TOKEN")
 HOST = os.getenv("HOST", "0.0.0.0")
 PORT = int(os.getenv("PORT", "8888"))
+PROXY = os.getenv("PROXY")
 confirm_code = ""
 
 logging.basicConfig(level=logging.INFO, format='[%(asctime)s] [%(levelname)s] [%(name)s]: %(message)s')
@@ -40,7 +43,8 @@ async def handle(request):
 app = web.Application()
 app.add_routes([web.route('*', '/', handle)])
 
-bot = Bot(token=TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
+session = AiohttpSession(proxy=PROXY)
+bot = Bot(token=TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML), session=session)
 dp = Dispatcher()
 
 
