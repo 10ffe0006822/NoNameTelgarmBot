@@ -2,12 +2,10 @@ import asyncio
 import os
 import random
 import string
-
 import db
 import logging
-
 from aiohttp import web
-
+import aiohttp
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram import Bot, Dispatcher, html, F
 from aiogram.client.default import DefaultBotProperties
@@ -20,10 +18,28 @@ TOKEN = os.getenv("TOKEN")
 HOST = os.getenv("HOST", "0.0.0.0")
 PORT = int(os.getenv("PORT", "8888"))
 PROXY = os.getenv("PROXY")
+PTERODACTYL_TOKEN=os.getenv("PTERODACTYL_TOKEN")
+PANEL_ADDRESS=os.getenv("PANEL_ADDRESS")
+SERVER_ID=os.getenv("SERVER_ID")
 confirm_code = ""
 
 logging.basicConfig(level=logging.INFO, format='[%(asctime)s] [%(levelname)s] [%(name)s]: %(message)s')
 logger = logging.getLogger(__name__)
+
+async def get_status():
+    headers = {
+        'Authorization': f'Bearer {PTERODACTYL_TOKEN}',
+        'Accept': 'Application/vnd.pterodactyl.v1+json',
+        'Content-Type': 'application/json'
+    }
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(f'{PANEL_ADDRESS}/api/client/servers/{SERVER_ID}/resources', headers=headers) as response:
+                json = await response.json()
+                return json['attributes']['current_state']
+    except Exception as e:
+        logger.error(e)
+        return "error"
 
 
 async def handle(request):
@@ -52,6 +68,7 @@ dp = Dispatcher()
 async def command_start_handler(message: Message):
     commands = [
         BotCommand(command="start", description="Запустить бота"),
+        BotCommand(command="status", description="Статус сервера"),
         BotCommand(command="help", description="Показать справку")
     ]
     try:
@@ -156,17 +173,30 @@ async def command_sub(message: Message):
             await message.answer(f"Чаты подписанные на уведомления: {msg}")
         except Exception as e:
             logger.error(e)
+@dp.message(Command("status"))
+async def command_sub(message: Message):
+    try:
+        await message.answer(f"Текущее состояние сервера: {await get_status()}")
+    except Exception as e:
+        logger.error(e)
+
 
 
 @dp.message()
 async def offer(message: Message):
     global bot
-    if not message.chat.id in db.get_chat_id():
-        chats = await db.get_chat_id()
+    chats = await db.get_chat_id()
+    if not str(message.chat.id) in chats:
         for chat in chats:
-            await bot.send_message(chat_id=int(chat), text=f"Новое предложение от пользователя {message.from_user.full_name} (@{message.from_user.username})")
-            await message.send_copy(chat_id=int(chat))
-        await message.answer("Ваше предложение передано администрации")
+            try:
+                await bot.send_message(chat_id=int(chat), text=f"Новое предложение от пользователя {message.from_user.full_name} (@{message.from_user.username})")
+                await message.send_copy(chat_id=int(chat))
+            except Exception as e:
+                logger.error(e)
+        try:
+            await message.answer("Ваше предложение передано администрации")
+        except Exception as e:
+            logger.error(e)
 
 
 async def main():
@@ -174,7 +204,10 @@ async def main():
     admins = await db.get_admin_id()
     if admins:
         for admin in admins:
-            await bot.send_message(chat_id=int(admin), text=f"Bot loaded")
+            try:
+                await bot.send_message(chat_id=int(admin), text=f"Bot loaded");
+            except Exception as e:
+                logger.error(e)
     runner = web.AppRunner(app)
     await runner.setup()
     site = web.TCPSite(runner, host=HOST, port=PORT)
