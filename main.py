@@ -161,11 +161,12 @@ async def command_sub(message: Message):
 @dp.message()
 async def offer(message: Message):
     global bot
-    chats = await db.get_chat_id()
-    for chat in chats:
-        await bot.send_message(chat_id=int(chat), text=f"Новое предложение от пользователя {message.from_user.full_name} (@{message.from_user.username})")
-        await message.send_copy(chat_id=int(chat))
-    await message.answer("Ваше предложение передано администрации")
+    if not message.chat.id in db.get_chat_id():
+        chats = await db.get_chat_id()
+        for chat in chats:
+            await bot.send_message(chat_id=int(chat), text=f"Новое предложение от пользователя {message.from_user.full_name} (@{message.from_user.username})")
+            await message.send_copy(chat_id=int(chat))
+        await message.answer("Ваше предложение передано администрации")
 
 
 async def main():
