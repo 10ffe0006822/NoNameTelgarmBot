@@ -174,7 +174,7 @@ async def command_sub(message: Message):
         except Exception as e:
             logger.error(e)
 @dp.message(Command("status"))
-async def command_sub(message: Message):
+async def command_status(message: Message):
     try:
         await message.answer(f"Текущее состояние сервера: {await get_status()}")
     except Exception as e:
